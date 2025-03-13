@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database
+  namespace: webapp
+spec:
+  selector:
+    matchLabels:
+      app: database
+  serviceName: database-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:5.7
+        ports:
+        - containerPort: 3306
+          name: web
+        args:
+          - "--ignore-db-dir=lost+found"
+
+        # resources:
+        #   limits:
+        #     memory: "512Mi"
+        #     cpu: "500m"
+        #   requests:
+        #     memory: "256Mi"
+        #     cpu: "250m"
+        volumeMounts:
+          - name: mysql-data
+            mountPath: /var/lib/mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: database-secrets
+                key: DB_PASSWORD
+          - name: MYSQL_INITDB_SKIP_TZINFO
+            value: "yes"
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gcp-storage
+      resources:
+        requests:
+          storage: 1Gi

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-config
+  namespace: webapp
+data:
+    DB_NAME: api
+    DB_SCHEMA: appi
+    DB_PORT: "3306"
+    APP_PORT: "8080"
