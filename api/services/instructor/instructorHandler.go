@@ -46,7 +46,7 @@ func CreateInstructorHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("inst", inst)
+	fmt.Println("inst", inst)
 	// Create the instructor record.
 	if u, err := user.GetUserByID(strconv.Itoa(inst.UserId)); err != nil || u.Role != constants.InstructorRole {
 		http.Error(w, "user not found or user is not an instructor", http.StatusBadRequest)
