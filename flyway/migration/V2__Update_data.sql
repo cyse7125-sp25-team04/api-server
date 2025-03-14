@@ -1,7 +1,7 @@
 USE api;
 -- ADD admin User
 INSERT IGNORE INTO users (first_name, last_name, user_name, password_hash, role)
-VALUES ('admin', 'admin', 'admin', 'admin', 'ADMIN');
+VALUES ('admin', 'admin', 'admin', '$2a$10$fuf.PUvm.I5ScIACGmWO8u57LgzlM/aB9FLQ8NNIXIwMpCeJJd8B2', 'ADMIN');
 
 -- ADD school
 INSERT IGNORE INTO schools (name)

@@ -8,6 +8,7 @@ import (
 	"time"
 	"webapp/db"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,7 +18,7 @@ import (
 type User struct {
 	ID        int       `gorm:"primaryKey;autoIncrement;column:user_id" json:"userId"`
 	CreatedAt time.Time `gorm:"column:date_created" json:"dateCreated"`
-	UpdatedAt time.Time `gorm:"column:date_updated" json:"dateUpdated"`
+	UpdatedAt time.Time `gorm:"column:date_modified" json:"dateUpdated"`
 	FirstName string    `gorm:"column:first_name" json:"firstName"`
 	LastName  string    `gorm:"column:last_name" json:"lastName"`
 	Username  string    `gorm:"column:user_name;unique" json:"username"`
@@ -27,27 +28,15 @@ type User struct {
 
 // CreateUser inserts a new user record into the users table using GORM.
 func CreateUser(u *User) error {
-	sqlDB, err := db.GetMySQLConn()
+	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("error connecting to MySQL")
+		return errors.New("error setting up connection to database")
 	}
-
-	gormDB, err := gorm.Open(mysql.New(mysql.Config{
-		Conn: sqlDB,
-	}), &gorm.Config{})
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("error initializing GORM")
+		return errors.New("error hashing password")
 	}
-
-	if err := gormDB.AutoMigrate(&User{}); err != nil {
-		fmt.Println(err)
-		return errors.New("error migrating user schema")
-	}
-
-	// IMPORTANT: In production, you should hash the password before storing it.
-
+	u.Password = string(hashedPass)
 	if err := gormDB.Create(u).Error; err != nil {
 		fmt.Println(err)
 		return errors.New("error inserting new user")
@@ -59,6 +48,7 @@ func CreateUser(u *User) error {
 // GetUserByID retrieves a user from the database by its ID.
 func GetUserByID(userID string) (*User, error) {
 	sqlDB, err := db.GetMySQLConn()
+
 	if err != nil {
 		fmt.Println(err)
 		return nil, errors.New("error connecting to MySQL")
@@ -96,30 +86,17 @@ func GetUserByID(userID string) (*User, error) {
 // UpdateUser updates an existing user's fields in the database.
 // It uses the user's ID (which should be already set) to perform the update.
 func UpdateUser(u *User) error {
-	// Get the MySQL *sql.DB connection from the db package.
-	sqlDB, err := db.GetMySQLConn()
+	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("error connecting to MySQL")
+		return errors.New("error setting up connection to database")
 	}
-
-	// Wrap the *sql.DB connection with GORM using the mysql driver.
-	gormDB, err := gorm.Open(mysql.New(mysql.Config{
-		Conn: sqlDB,
-	}), &gorm.Config{})
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println(err)
-		return errors.New("error initializing GORM")
+		return errors.New("error hashing password")
 	}
-
-	// Ensure the user schema is up-to-date.
-	if err := gormDB.AutoMigrate(&User{}); err != nil {
-		fmt.Println(err)
-		return errors.New("error migrating user schema")
-	}
-
+	u.Password = string(hashedPass)
 	// Update the user record identified by u.ID.
-	if err := gormDB.Model(&User{}).Where("userId = ?", u.ID).Updates(u).Error; err != nil {
+	if err := gormDB.Model(&User{}).Where("user_id = ?", u.ID).Updates(u).Error; err != nil {
 		fmt.Println(err)
 		return errors.New("error updating user")
 	}
@@ -131,23 +108,9 @@ func UpdateUser(u *User) error {
 
 // Authenticate checks if the provided username and password match a record in the database.
 func Authenticate(username, password string) (*User, error) {
-	sqlDB, err := db.GetMySQLConn()
+	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
-		fmt.Println(err)
-		return nil, errors.New("error connecting to MySQL")
-	}
-
-	gormDB, err := gorm.Open(mysql.New(mysql.Config{
-		Conn: sqlDB,
-	}), &gorm.Config{})
-	if err != nil {
-		fmt.Println(err)
-		return nil, errors.New("error initializing GORM")
-	}
-
-	if err := gormDB.AutoMigrate(&User{}); err != nil {
-		fmt.Println(err)
-		return nil, errors.New("error migrating user schema")
+		return nil, errors.New("error setting up connection to database")
 	}
 
 	var u User
@@ -157,10 +120,23 @@ func Authenticate(username, password string) (*User, error) {
 		return nil, errors.New("user not found")
 	}
 
-	// In production, you would compare hashed passwords.
-	if u.Password != password {
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
 		return nil, errors.New("invalid credentials")
 	}
 
 	return &u, nil
+}
+
+func IsUserExists(username string) bool {
+	gormDB, err := db.GetOrmDatabase()
+	if err != nil {
+		return false
+	}
+	var u User
+	// Query the user by username.
+	if err := gormDB.Where("user_name = ?", username).First(&u).Error; err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return true
 }
