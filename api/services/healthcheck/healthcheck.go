@@ -12,8 +12,8 @@ import (
 
 // HealthCheckRecord represents a record in the webapp table.
 type HealthCheckRecord struct {
-	check_id   uint      `gorm:"primaryKey"`
-	check_time time.Time `json:"datetime"`
+	Check_id   uint      `gorm:"primaryKey"`
+	Check_time time.Time `json:"datetime"`
 }
 
 // TableName sets the insert table name for this struct type.
@@ -41,7 +41,7 @@ func Check() error {
 
 	// Create a new healthcheck record with the current UTC time.
 	record := HealthCheckRecord{
-		check_time: time.Now().UTC(),
+		Check_time: time.Now().UTC(),
 	}
 	if err := gormDB.Create(&record).Error; err != nil {
 		fmt.Println(err)
