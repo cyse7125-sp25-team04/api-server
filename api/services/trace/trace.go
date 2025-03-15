@@ -7,7 +7,7 @@ import (
 	"time"
 	"webapp/config"
 	"webapp/db"
-	gcpgateway "webapp/services/gcpGateway"
+	gcpgateway "webapp/services/GCPGateway"
 
 	"gorm.io/gorm"
 )
