@@ -1,53 +1,50 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: database
-  namespace: webapp
+  name: {{ .Values.database.name }}
+  namespace: {{ .Values.namespace }}
 spec:
   selector:
     matchLabels:
-      app: database
-  serviceName: database-service
-  replicas: 1
+      app: {{ .Values.database.name }}
+  serviceName: {{ .Values.database.serviceName }}
+  replicas: {{ .Values.database.replicas }}
   template:
     metadata:
       labels:
-        app: database
+        app: {{ .Values.database.name }}
     spec:
       containers:
-      - name: mysql
-        image: mysql:5.7
+      - name: {{ .Values.database.container.name }}
+        image: {{ .Values.database.container.image }}
         ports:
-        - containerPort: 3306
-          name: web
+        {{- range .Values.database.container.ports }}
+        - containerPort: {{ .containerPort }}
+          name: {{ .name }}
+        {{- end }}
         args:
-          - "--ignore-db-dir=lost+found"
-
-        # resources:
-        #   limits:
-        #     memory: "512Mi"
-        #     cpu: "500m"
-        #   requests:
-        #     memory: "256Mi"
-        #     cpu: "250m"
+        {{- range .Values.database.container.args }}
+          - {{ . }}
+        {{- end }}
         volumeMounts:
-          - name: mysql-data
-            mountPath: /var/lib/mysql
+        {{- range .Values.database.container.volumeMounts }}
+          - name: {{ .name }}
+            mountPath: {{ .mountPath }}
+        {{- end }}
         env:
           - name: MYSQL_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: database-secrets
-                key: DB_PASSWORD
+                name: {{ .Values.database.container.env.MYSQL_ROOT_PASSWORD_SECRET }}
+                key: {{ .Values.database.container.env.MYSQL_ROOT_PASSWORD_KEY }}
           - name: MYSQL_INITDB_SKIP_TZINFO
-            value: "yes"
-
+            value: "{{ .Values.database.container.env.MYSQL_INITDB_SKIP_TZINFO }}"
   volumeClaimTemplates:
   - metadata:
-      name: mysql-data
+      name: {{ (index .Values.database.container.volumeMounts 0).name }}
     spec:
       accessModes: [ "ReadWriteOnce" ]
-      storageClassName: gcp-storage
+      storageClassName: {{ .Values.database.storage.storageClassName }}
       resources:
         requests:
-          storage: 1Gi
+          storage: {{ .Values.database.storage.size }}

@@ -1,124 +1,116 @@
-# Default values for api-server.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+namespace: webapp
 
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 1
+deployment:
+  name: webapp
+  replicas: 1
+  labels:
+    app: myapp
+  serviceAccountName: pod-service-account
+  imagePullSecrets:
+    - name: docker-login-secret
+  container:
+    name: webapp
+    image: csye712504/api-server:latest
+    imagePullPolicy: Always
+    ports:
+      - containerPort: 8080
+    env:
+      DB_HOST: database-service.webapp.svc.cluster.local
+      DB_PORT_CONFIGMAP: webapp-config  # Reference to the configMap for DB_PORT
+      DB_PORT_KEY: DB_PORT
+      DB_USERNAME_SECRET: database-secrets
+      DB_USERNAME_KEY: DB_USERNAME
+      DB_PASSWORD_SECRET: database-secrets
+      DB_PASSWORD_KEY: DB_PASSWORD
+      DB_NAME_CONFIGMAP: webapp-config
+      DB_NAME_KEY: DB_NAME
+      STORAGE_BUCKET_NAME: your-bucket-name-001
+      GOOGLE_PROJECT_ID: gcp-dev-7125
+  initContainer:
+    name: flyway-init-container
+    image: csye712504/flyway:latest
+    imagePullPolicy: Always
+    env:
+      DB_HOST: database-service.webapp.svc.cluster.local
+      DB_PORT_CONFIGMAP: webapp-config
+      DB_PORT_KEY: DB_PORT
+      DB_USERNAME_SECRET: database-secrets
+      DB_USERNAME_KEY: DB_USERNAME
+      DB_PASSWORD_SECRET: database-secrets
+      DB_PASSWORD_KEY: DB_PASSWORD
+      DB_NAME_CONFIGMAP: webapp-config
+      DB_NAME_KEY: DB_NAME
+      DB_SCHEMA_CONFIGMAP: webapp-config
+      DB_SCHEMA_KEY: DB_SCHEMA
 
-# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
-image:
-  repository: nginx
-  # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+configMap:
+  name: webapp-config
+  data:
+    DB_NAME: api
+    DB_SCHEMA: appi
+    DB_PORT: "3306"
+    APP_PORT: "8080"
 
-# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-imagePullSecrets: []
-# This is to override the chart name.
-nameOverride: ""
-fullnameOverride: ""
+secrets:
+  dockerSecret:
+    name: docker-login-secret
+    data: 
+      .dockerconfigjson: eyJhdXRocyI6eyJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOnsidXNlcm5hbWUiOiJjc3llNzEyNUBnbWFpbC5jb20iLCJwYXNzd29yZCI6ImRja3JfcGF0X1ZXcHU2ampEbGhwc2JlWjVkaTdxcmhqSUxpUSIsImVtYWlsIjoiY3N5ZTcxMjVAZ21haWwuY29tIiwiYXV0aCI6IlkzTjVaVGN4TWpWQVoyMWhhV3d1WTI5dE9tUmphM0pmY0dGMFgxWlhjSFUyYW1wRWJHaHdjMkpsV2pWa2FUZHhjbWhxU1V4cFVRPT0ifX19
+  databaseSecret:
+    name: database-secrets
+    data:
+      DB_USERNAME: cm9vdA==  # Base64 encoded
+      DB_PASSWORD: ZGF0YWJhc2U=  # Base64 encoded
 
-# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+services:
+  webapp:
+    name: webapp-service
+    type: LoadBalancer
+    port: 8080
+    targetPort: 8080
+    selector:
+      app: myapp
+
+  database:
+    name: database-service
+    selector:
+      app: database
+    clusterIP: None
+    port: 3306
+    targetPort: 3306
+
+database:
+  name: database
+  replicas: 1
+  serviceName: database-service
+  container:
+    name: mysql
+    image: mysql:5.7
+    ports:
+      - containerPort: 3306
+        name: web
+    args:
+      - "--ignore-db-dir=lost+found"
+    volumeMounts:
+      - name: mysql-data
+        mountPath: /var/lib/mysql
+    env:
+      MYSQL_ROOT_PASSWORD_SECRET: database-secrets
+      MYSQL_ROOT_PASSWORD_KEY: DB_PASSWORD
+      MYSQL_INITDB_SKIP_TZINFO: "yes"
+  storage:
+    storageClassName: gcp-storage
+    size: 1Gi
+
+storageClasses:
+  gcp:
+    name: gcp-storage
+    provisioner: pd.csi.storage.gke.io
+    reclaimPolicy: Retain
+    volumeBindingMode: Immediate
+    allowVolumeExpansion: true
+
 serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  # Annotations to add to the service account
-  annotations: {
-  }
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-# This is for setting Kubernetes Annotations to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations: {}
-# This is for setting Kubernetes Labels to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
-podLabels: {}
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
-service:
-  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
-
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
-
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
-
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-livenessProbe:
-  httpGet:
-    path: /
-    port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
-
-# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
+  name: pod-service-account
+  annotations:
+    iam.gke.io/gcp-service-account: bucket-updater@your-gcp-project.iam.gserviceaccount.com
