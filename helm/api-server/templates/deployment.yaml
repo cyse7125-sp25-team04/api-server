@@ -1,88 +1,93 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webapp
-  namespace: webapp
+  name: {{ .Values.deployment.name }}
+  namespace: {{ .Values.namespace }}
   labels:
-    app: myapp
+    app: {{ .Values.deployment.labels.app }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.deployment.replicas }}
   selector:
     matchLabels:
-      app: myapp
+      app: {{ .Values.deployment.labels.app }}
   template:
     metadata:
       labels:
-        app: myapp
+        app: {{ .Values.deployment.labels.app }}
     spec:
-      serviceAccountName: pod-service-account
+      serviceAccountName: {{ .Values.deployment.serviceAccountName }}
+
+      # ✅ Corrected imagePullSecrets to iterate over the list
       imagePullSecrets:
-        - name: docker-login-secret
+      {{- range .Values.deployment.imagePullSecrets }}
+        - name: {{ .name }}
+      {{- end }}
+
       containers:
-      - name: webapp
-        image: csye712504/api-server:latest
-        imagePullPolicy: Always
+      - name: {{ .Values.deployment.container.name }}
+        image: {{ .Values.deployment.container.image }}
+        imagePullPolicy: {{ .Values.deployment.container.imagePullPolicy }}
         ports:
-        - containerPort: 8080
+          {{- range .Values.deployment.container.ports }}
+          - containerPort: {{ .containerPort }}
+          {{- end }}
         env:
         - name: DB_HOST
-          value: database-service.webapp.svc.cluster.local
+          value: "{{ .Values.deployment.container.env.DB_HOST }}"
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: webapp-config
-              key: DB_PORT
+              name: "{{ .Values.deployment.container.env.DB_PORT_CONFIGMAP }}"
+              key: "{{ .Values.deployment.container.env.DB_PORT_KEY }}"
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: database-secrets
-              key: DB_USERNAME
+              name: "{{ .Values.deployment.container.env.DB_USERNAME_SECRET }}"
+              key: "{{ .Values.deployment.container.env.DB_USERNAME_KEY }}"
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: database-secrets
-              key: DB_PASSWORD
+              name: "{{ .Values.deployment.container.env.DB_PASSWORD_SECRET }}"
+              key: "{{ .Values.deployment.container.env.DB_PASSWORD_KEY }}"
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
-              name: webapp-config
-              key: DB_NAME
+              name: "{{ .Values.deployment.container.env.DB_NAME_CONFIGMAP }}"
+              key: "{{ .Values.deployment.container.env.DB_NAME_KEY }}"
         - name: STORAGE_BUCKET_NAME
-          value: your-bucket-name-001
-        - name : GOOGLE_PROJECT_ID
-          value: gcp-dev-7125
+          value: "{{ .Values.deployment.container.env.STORAGE_BUCKET_NAME }}"
+        - name: GOOGLE_PROJECT_ID
+          value: "{{ .Values.deployment.container.env.GOOGLE_PROJECT_ID }}"
+
       initContainers:
-      - name: flyway-init-container
-        image: csye712504/flyway:latest
-        imagePullPolicy: Always
+      - name: {{ .Values.deployment.initContainer.name }}
+        image: {{ .Values.deployment.initContainer.image }}
+        imagePullPolicy: {{ .Values.deployment.initContainer.imagePullPolicy }}
         env:
         - name: DB_HOST
-          value: database-service.webapp.svc.cluster.local
+          value: "{{ .Values.deployment.initContainer.env.DB_HOST }}"
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: webapp-config
-              key: DB_PORT
+              name: "{{ .Values.deployment.initContainer.env.DB_PORT_CONFIGMAP }}"
+              key: "{{ .Values.deployment.initContainer.env.DB_PORT_KEY }}"
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: database-secrets
-              key: DB_USERNAME
+              name: "{{ .Values.deployment.initContainer.env.DB_USERNAME_SECRET }}"
+              key: "{{ .Values.deployment.initContainer.env.DB_USERNAME_KEY }}"
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: database-secrets
-              key: DB_PASSWORD
+              name: "{{ .Values.deployment.initContainer.env.DB_PASSWORD_SECRET }}"
+              key: "{{ .Values.deployment.initContainer.env.DB_PASSWORD_KEY }}"
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
-              name: webapp-config
-              key: DB_NAME
+              name: "{{ .Values.deployment.initContainer.env.DB_NAME_CONFIGMAP }}"
+              key: "{{ .Values.deployment.initContainer.env.DB_NAME_KEY }}"
         - name: DB_SCHEMA
           valueFrom:
             configMapKeyRef:
-              name: webapp-config
-              key: DB_SCHEMA
-
-        
-      
+              name: "{{ .Values.deployment.initContainer.env.DB_SCHEMA_CONFIGMAP }}"
+              key: "{{ .Values.deployment.initContainer.env.DB_SCHEMA_KEY }}"
