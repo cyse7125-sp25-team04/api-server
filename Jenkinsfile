@@ -47,7 +47,7 @@ pipeline{
 
                         try {
                             // sh ''' git remote set-url origin https://$GITHUB_TOKEN@github.com/$REPO_OWNER/$REPO_NAME.git '''
-                            sh 'git remote set-url origin https://$GITHUB_TOKEN@github.com/cyse7125-sp25-team04/webapp-hello-world.git'
+                            sh 'git remote set-url origin https://$GITHUB_TOKEN@github.com:cyse7125-sp25-team04/api-server.git'
                             // Fetch all remotes and tags
                             sh 'git fetch --all --tags'
                             echo "Successfully fetched all tags from all remotes."
