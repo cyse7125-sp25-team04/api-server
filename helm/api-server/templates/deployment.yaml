@@ -58,7 +58,24 @@ spec:
           value: "{{ .Values.deployment.container.env.STORAGE_BUCKET_NAME }}"
         - name: GOOGLE_PROJECT_ID
           value: "{{ .Values.deployment.container.env.GOOGLE_PROJECT_ID }}"
-
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.deployment.container.livelinessProbe.httpGet.path }}
+            port: {{ .Values.deployment.container.livelinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.deployment.container.livelinessProbe.initialDelaySeconds}}
+          periodSeconds: {{ .Values.deployment.container.livelinessProbe.periodSeconds}}
+          failureThreshold: {{ .Values.deployment.container.livelinessProbe.failureThreshold}}
+          successThreshold: {{ .Values.deployment.container.livelinessProbe.successThreshold}}
+          timeoutSeconds: {{ .Values.deployment.container.livelinessProbe.timeoutSeconds}}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.deployment.container.readinessProbe.httpGet.path }}
+            port: {{ .Values.deployment.container.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.deployment.container.readinessProbe.initialDelaySeconds}}
+          periodSeconds: {{ .Values.deployment.container.readinessProbe.periodSeconds}}
+          failureThreshold: {{ .Values.deployment.container.readinessProbe.failureThreshold}}
+          successThreshold: {{ .Values.deployment.container.readinessProbe.successThreshold}}
+          timeoutSeconds: {{ .Values.deployment.container.readinessProbe.timeoutSeconds}}
       initContainers:
       - name: {{ .Values.deployment.initContainer.name }}
         image: {{ .Values.deployment.initContainer.image }}

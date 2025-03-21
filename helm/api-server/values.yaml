@@ -26,6 +26,24 @@ deployment:
       DB_NAME_KEY: DB_NAME
       STORAGE_BUCKET_NAME: your-bucket-name-001
       GOOGLE_PROJECT_ID: gcp-dev-7125
+    livelinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+        successThreshold: 1
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+        successThreshold: 1
   initContainer:
     name: flyway-init-container
     image: csye712504/flyway:latest
@@ -42,6 +60,7 @@ deployment:
       DB_NAME_KEY: DB_NAME
       DB_SCHEMA_CONFIGMAP: webapp-config
       DB_SCHEMA_KEY: DB_SCHEMA
+
 
 configMap:
   name: webapp-config
@@ -113,4 +132,7 @@ storageClasses:
 serviceAccount:
   name: pod-service-account
   annotations:
-    iam.gke.io/gcp-service-account: bucket-updater@your-gcp-project.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: bucket-access@gcp-dev-7125.iam.gserviceaccount.com
+
+networkPolicy:
+  name: webapp-network-policy
