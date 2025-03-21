@@ -39,6 +39,25 @@ spec:
                 key: {{ .Values.database.container.env.MYSQL_ROOT_PASSWORD_KEY }}
           - name: MYSQL_INITDB_SKIP_TZINFO
             value: "{{ .Values.database.container.env.MYSQL_INITDB_SKIP_TZINFO }}"
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - "MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
   volumeClaimTemplates:
   - metadata:
       name: {{ (index .Values.database.container.volumeMounts 0).name }}
