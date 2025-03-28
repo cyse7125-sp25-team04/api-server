@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-client-config
+  namespace: kafka
+data:
+  client.properties.template: |
+    security.protocol=SASL_PLAINTEXT
+    sasl.mechanism=PLAIN
+    sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+    username="user1" \
+    password="${KAFKA_CLIENT_PASSWORD}";
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-kafka-topics
+  namespace: kafka
+spec:
+  template:
+    spec:
+      containers:
+      - name: create-topics
+        image: bitnami/kafka:latest
+        env:
+        - name: KAFKA_CLIENT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: my-kafka-user-passwords
+              key: client-passwords
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Ensure config directory exists
+          mkdir -p /config
+          
+          # Create client.properties by substituting the password
+          sed "s/\${KAFKA_CLIENT_PASSWORD}/${KAFKA_CLIENT_PASSWORD%%,*}/" \
+            /config-template/client.properties.template > /config/client.properties
+          
+          # Create Kafka topics
+          kafka-topics.sh \
+          --command-config /config/client.properties \
+          --bootstrap-server my-kafka-controller-0.my-kafka-controller-headless.kafka.svc.cluster.local:9092,my-kafka-controller-1.my-kafka-controller-headless.kafka.svc.cluster.local:9092,my-kafka-controller-2.my-kafka-controller-headless.kafka.svc.cluster.local:9092 \
+          --create \
+          --topic pdf_uploads \
+          --partitions 1 \
+          --replication-factor 1
+        volumeMounts:
+        - name: config-template
+          mountPath: /config-template
+        - name: config-volume
+          mountPath: /config
+      restartPolicy: Never
+      volumes:
+      - name: config-template
+        configMap:
+          name: kafka-client-config
+          items:
+          - key: client.properties.template
+            path: client.properties.template
+      - name: config-volume
+        emptyDir: {}
+  backoffLimit: 4

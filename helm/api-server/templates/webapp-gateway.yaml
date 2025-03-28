@@ -1,0 +1,24 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: webapp-gateway
+  namespace: webapp
+spec:
+  selector:
+    istio: ingressgateway  # This selects the Istio ingress gateway pod(s)
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "dev.gcp.csye7125.xyz"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: myapp-tls  # This should match the secret created by cert-manager
+    hosts:
+    - "dev.gcp.csye7125.xyz"
