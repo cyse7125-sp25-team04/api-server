@@ -84,7 +84,7 @@ secrets:
 services:
   webapp:
     name: webapp-service
-    type: LoadBalancer
+    type: ClusterIP
     port: 8080
     targetPort: 8080
     selector:
@@ -104,6 +104,7 @@ database:
   serviceName: database-service
   container:
     name: mysql
+    # image: mariadb:10.5.8
     image: mysql:5.7
     ports:
       - containerPort: 3306

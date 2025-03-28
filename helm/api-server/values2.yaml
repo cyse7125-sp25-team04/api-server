@@ -1,0 +1,35 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+
+persistence:
+  enabled: false
+  deleteClaim: true
+
+auth:
+  enabled: false
+
+configurationOverrides:
+  listeners: "PLAINTEXT://localhost:9092"
+
+# zookeeper:
+#   enabled: true
+
+
+# kafka-topics.sh \
+#   --command-config /tmp/client.properties \
+#   --bootstrap-server my-kafka-controller-0.my-kafka-controller-headless.kafka.svc.cluster.local:9092,my-kafka-controller-1.my-kafka-controller-headless.kafka.svc.cluster.local:9092,my-kafka-controller-2.my-kafka-controller-headless.kafka.svc.cluster.local:9092 \
+#   --create \
+#   --topic pdf_uploads \
+#   --partitions 1 \
+#   --replication-factor 1
+
+
+# cat <<EOF > client.properties
+# security.protocol=SASL_PLAINTEXT
+# sasl.mechanism=PLAIN
+# sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule  required \
+#     username="user1" \
+#     password="$(kubectl get secret my-kafka-user-passwords --namespace kafka -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+# EOF

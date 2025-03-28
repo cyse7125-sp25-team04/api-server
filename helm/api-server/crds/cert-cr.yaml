@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: myapp-cert
+  namespace: istio-system
+spec:
+  secretName: myapp-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  commonName: dev.gcp.csye7125.xyz
+  dnsNames:
+  - dev.gcp.csye7125.xyz
+

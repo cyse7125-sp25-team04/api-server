@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: webapp-virtualservice
+  namespace: webapp
+spec:
+  hosts:
+  - "*"  # Replace with your domain, or use "*" for all hosts
+  gateways:
+  - webapp-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/"  # Matches all paths
+    route:
+    - destination:
+        host: webapp-service.webapp.svc.cluster.local
+        port:
+          number: 8080
