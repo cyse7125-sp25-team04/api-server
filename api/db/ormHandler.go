@@ -2,8 +2,8 @@ package db
 
 import (
 	"errors"
-	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -11,7 +11,7 @@ import (
 func GetOrmDatabase() (*gorm.DB, error) {
 	sqlDB, err := GetMySQLConn()
 	if err != nil {
-		fmt.Println(err)
+		log.WithError(err).Error("Failed to connect to MySQL")
 		return nil, errors.New("error connecting to MySQL")
 	}
 
@@ -19,9 +19,10 @@ func GetOrmDatabase() (*gorm.DB, error) {
 		Conn: sqlDB,
 	}), &gorm.Config{})
 	if err != nil {
-		fmt.Println(err)
+		log.WithError(err).Error("Failed to initialize GORM")
 		return nil, errors.New("error initializing GORM")
 	}
 
+	log.Info("Successfully initialized GORM database connection")
 	return gormDB, nil
 }
