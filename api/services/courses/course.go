@@ -6,6 +6,7 @@ import (
 	"time"
 	"webapp/db"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -25,6 +26,7 @@ func GetCourseByCode(courseCode string) (*Course, error) {
 	// Get the MySQL connection.
 	sqlDB, err := db.GetMySQLConn()
 	if err != nil {
+		log.WithError(err).Error("Error connecting to MySQL")
 		return nil, errors.New("error connecting to MySQL")
 	}
 	// Open GORM DB using the MySQL driver.
@@ -32,6 +34,7 @@ func GetCourseByCode(courseCode string) (*Course, error) {
 		Conn: sqlDB,
 	}), &gorm.Config{})
 	if err != nil {
+		log.WithError(err).Error("Error initializing GORM")
 		return nil, errors.New("error initializing GORM")
 	}
 
@@ -41,6 +44,7 @@ func GetCourseByCode(courseCode string) (*Course, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		log.WithError(err).Error("error fetching course")
 		return nil, errors.New("error fetching course")
 	}
 	return &crs, nil
@@ -52,12 +56,14 @@ func CreateCourse(course *Course) error {
 	// Get the MySQL connection.
 	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
+		log.WithError(err).Error("error connecting to MySQL")
 		return errors.New("error connecting to MySQL")
 	}
 
 	// Create the new course record.
 	if err := gormDB.Create(course).Error; err != nil {
 		fmt.Println(err)
+		log.WithError(err).Error("error inserting new course")
 		return errors.New("error inserting new course")
 	}
 	return nil
@@ -67,9 +73,11 @@ func CreateCourse(course *Course) error {
 func DeleteCourse(courseId int) error {
 	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
+		log.WithError(err).Error("error connecting to MySQL")
 		return errors.New("error connecting to MySQL")
 	}
 	if err := gormDB.Delete(&Course{}, courseId).Error; err != nil {
+		log.WithError(err).Error("error deleting course")
 		return errors.New("error deleting course")
 	}
 	return nil
@@ -78,9 +86,11 @@ func DeleteCourse(courseId int) error {
 func UpdateCourse(course *Course) error {
 	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
+		log.WithError(err).Error("error connecting to MySQL")
 		return errors.New("error connecting to MySQL")
 	}
 	if err := gormDB.Model(&Course{}).Where("course_id = ?", course.CourseId).Updates(course).Error; err != nil {
+		log.WithError(err).Error("error updating course")
 		return errors.New("error updating course")
 	}
 	return nil
@@ -89,10 +99,12 @@ func UpdateCourse(course *Course) error {
 func GetCourseById(courseId int) (*Course, error) {
 	gormDB, err := db.GetOrmDatabase()
 	if err != nil {
+		log.WithError(err).Error("error connecting to MySQL")
 		return nil, errors.New("error connecting to MySQL")
 	}
 	var crs Course
 	if err := gormDB.Where("course_id = ?", courseId).First(&crs).Error; err != nil {
+		log.WithError(err).Error("course not found")
 		return nil, errors.New("course not found")
 	}
 	return &crs, nil

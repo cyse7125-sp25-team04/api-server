@@ -6,6 +6,7 @@ import (
 	"time"
 	"webapp/db"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -27,6 +28,7 @@ func Check() error {
 	sqlDB, err := db.GetMySQLConn()
 	if err != nil {
 		fmt.Println(err)
+		log.WithError(err).Error("error connecting to MySQL")
 		return errors.New("error connecting to MySQL")
 	}
 
@@ -36,6 +38,7 @@ func Check() error {
 	}), &gorm.Config{})
 	if err != nil {
 		fmt.Println(err)
+		log.WithError(err).Error("error initializing GORM")
 		return errors.New("error initializing GORM")
 	}
 
@@ -45,6 +48,7 @@ func Check() error {
 	}
 	if err := gormDB.Create(&record).Error; err != nil {
 		fmt.Println(err)
+		log.WithError(err).Error("error inserting into healthchecks table")
 		return errors.New("error inserting into healthchecks table")
 	}
 
