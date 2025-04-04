@@ -1,0 +1,129 @@
+# infra/helm/prometheus/values.yaml
+
+# Enable Prometheus Operator to manage ServiceMonitors
+prometheus:
+  prometheusSpec:
+    # Additional scrape configs for custom metrics
+    additionalScrapeConfigs:
+      # cert-manager
+      - job_name: cert-manager
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+            - cert-manager  # Adjust namespace if different
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: keep
+          regex: cert-manager
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+          target_label: __metrics_port__
+          regex: "9402"
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: "9402"
+        metrics_path: /metrics
+
+      # # external-dns
+      # - job_name: external-dns
+      #   kubernetes_sd_configs:
+      #   - role: pod
+      #     namespaces:
+      #       names:
+      #       - external-dns  # Adjust namespace if different
+      #   relabel_configs:
+      #   - source_labels: [__meta_kubernetes_pod_label_app]
+      #     action: keep
+      #     regex: external-dns
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+      #     action: keep
+      #     regex: true
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+      #     target_label: __metrics_port__
+      #     regex: (\d+)
+      #   metrics_path: /metrics
+
+      # # PostgreSQL (using postgres_exporter)
+      # - job_name: postgres-exporter
+      #   kubernetes_sd_configs:
+      #   - role: pod
+      #     namespaces:
+      #       names:
+      #       - default  # Adjust namespace if different
+      #   relabel_configs:
+      #   - source_labels: [__meta_kubernetes_pod_label_app]
+      #     action: keep
+      #     regex: postgres-exporter
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+      #     action: keep
+      #     regex: true
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+      #     target_label: __metrics_port__
+      #     regex: (\d+)
+      #   metrics_path: /metrics
+
+      # # Kafka
+      # - job_name: kafka
+      #   kubernetes_sd_configs:
+      #   - role: pod
+      #     namespaces:
+      #       names:
+      #       - kafka  # Adjust namespace if different
+      #   relabel_configs:
+      #   - source_labels: [__meta_kubernetes_pod_label_app]
+      #     action: keep
+      #     regex: kafka
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+      #     action: keep
+      #     regex: true
+      #   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+      #     target_label: __metrics_port__
+      #     regex: (\d+)
+      #   metrics_path: /metrics
+
+      # Istio (control plane and data plane)
+      - job_name: istio-controlplane
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+            - istio-system  # Adjust namespace if different
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_istio]
+          action: keep
+          regex: (pilot|mixer|galley|citadel|sidecar-injector)
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+          target_label: __metrics_port__
+          regex: "15014"  # Explicitly set to 15014
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: "15014"
+        metrics_path: /metrics
+
+      - job_name: istio-dataplane
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          action: keep
+          regex: .*envoy-prom
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        metrics_path: /stats/prometheus
+
+# Enable Grafana for dashboard creation
+grafana:
+  enabled: true
+  adminPassword: "pass"  # Change this
+  sidecar:
+    datasources:
+      enabled: true  # Automatically detect Prometheus as a datasource
