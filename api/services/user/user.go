@@ -41,7 +41,7 @@ func CreateUser(u *User) error {
 		fmt.Println(err)
 		return errors.New("error inserting new user")
 	}
-
+	defer db.CloseDB()
 	return nil
 }
 

@@ -17,7 +17,6 @@ spec:
     spec:
       serviceAccountName: {{ .Values.deployment.serviceAccountName }}
 
-      # ✅ Corrected imagePullSecrets to iterate over the list
       imagePullSecrets:
       {{- range .Values.deployment.imagePullSecrets }}
         - name: {{ .name }}

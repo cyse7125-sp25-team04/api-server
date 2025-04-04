@@ -16,6 +16,8 @@ spec:
       annotations:
         sidecar.istio.io/inject: "false"
     spec:
+      serviceAccountName: "{{ .Values.database.name }}-sa"  # Added ServiceAccount
+      automountServiceAccountToken: false
       containers:
       - name: {{ .Values.database.container.name }}
         image: {{ .Values.database.container.image }}

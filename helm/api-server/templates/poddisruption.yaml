@@ -1,0 +1,24 @@
+# PDB for webapp Deployment
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "{{ .Values.deployment.name }}-pdb"
+  namespace: {{ .Values.namespace }}
+spec:
+  minAvailable: 1  # At least one pod must be available
+  selector:
+    matchLabels:
+      app: {{ .Values.deployment.labels.app }}
+
+---
+# PDB for database StatefulSet
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "{{ .Values.database.name }}-pdb"
+  namespace: {{ .Values.namespace }}
+spec:
+  maxUnavailable: 1  # Only one pod can be unavailable at a time
+  selector:
+    matchLabels:
+      app: {{ .Values.database.name }}

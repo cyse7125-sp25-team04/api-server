@@ -9,6 +9,10 @@ import (
 )
 
 func GetOrmDatabase() (*gorm.DB, error) {
+	if gormDBInstance != nil {
+		return gormDBInstance, nil
+	}
+
 	sqlDB, err := GetMySQLConn()
 	if err != nil {
 		log.WithError(err).Error("Failed to connect to MySQL")
@@ -24,5 +28,13 @@ func GetOrmDatabase() (*gorm.DB, error) {
 	}
 
 	log.Info("Successfully initialized GORM database connection")
-	return gormDB, nil
+	gormDBInstance = gormDB
+	return gormDBInstance, nil
+}
+
+func CloseDB() {
+	if sqlDBInstance != nil {
+		sqlDBInstance.Close()
+		log.Info("MySQL connection closed")
+	}
 }
