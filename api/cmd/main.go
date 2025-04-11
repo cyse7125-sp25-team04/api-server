@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 	"os"
-
+	"fmt"
+	
 	course "webapp/services/courses"
 	"webapp/services/healthcheck"
 	"webapp/services/instructor"
@@ -14,13 +16,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var version string
+
 func main() {
 	// Configure logrus for structured logging (JSON format).
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
+	
+	versionFlag := flag.Bool("version", false, "Print version and exit")
+    flag.Parse()
+    if *versionFlag {
+		fmt.Println(version)
+        os.Exit(0)
+    }
 
-	log.Info("Application initialization starting...")
+	log.WithField("version", version).Info("Application initialization starting...")
 	startServer()
 }
 

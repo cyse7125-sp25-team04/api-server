@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: webapp  # Adjust to your namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector:latest
+        args: ["--config=/conf/otel-collector-config.yaml"]
+        volumeMounts:
+        - name: config
+          mountPath: /conf
+        ports:
+        - containerPort: 4318  # OTLP HTTP endpoint
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: webapp  # Adjust to your namespace
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+    processors:
+      batch: {}
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889"  # Prometheus scrapes this
+      otlp/jaeger:
+        endpoint: "jaeger-collector.webapp.svc.cluster.local:14268"  # Jaeger gRPC endpoint
+        tls:
+          insecure: true  # Adjust if TLS is required
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/jaeger]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]
+      telemetry:
+        logs:
+          level: "info"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: webapp  # Adjust to your namespace
+spec:
+  ports:
+  - port: 4318
+    targetPort: 4318
+    protocol: TCP
+    name: otlp-http
+  - port: 8889
+    targetPort: 8889
+    protocol: TCP
+    name: prometheus
+  selector:
+    app: otel-collector

@@ -3,6 +3,6 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY ./ ./
-RUN go build -o /go/bin/webapp ./cmd/main.go
+RUN CGO_ENABLED=0 go build -o /go/bin/webapp -ldflags "-X main.version=1.0.0" ./cmd/main.go
 EXPOSE 8080
 ENTRYPOINT ["/go/bin/webapp"]

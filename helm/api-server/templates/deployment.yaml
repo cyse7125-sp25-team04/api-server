@@ -15,6 +15,7 @@ spec:
       labels:
         app: {{ .Values.deployment.labels.app }}
     spec:
+      shareProcessNamespace: true
       serviceAccountName: {{ .Values.deployment.serviceAccountName }}
 
       imagePullSecrets:
@@ -75,6 +76,25 @@ spec:
           failureThreshold: {{ .Values.deployment.container.readinessProbe.failureThreshold}}
           successThreshold: {{ .Values.deployment.container.readinessProbe.successThreshold}}
           timeoutSeconds: {{ .Values.deployment.container.readinessProbe.timeoutSeconds}}
+      - name: autoinstrumentation-go
+        image: otel/autoinstrumentation-go:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: OTEL_GO_AUTO_TARGET_EXE
+            value: /go/bin/webapp  # Replace with your Go binary path
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://otel-collector.webapp.svc.cluster.local:4318"  # Points to collector
+          - name: OTEL_SERVICE_NAME
+            value: "webapp-service"
+          - name: OTEL_PROPAGATORS
+            value: "tracecontext,baggage"  # Matches service mesh defaults
+          - name: OTEL_METRICS_EXPORTER
+            value: "otlp"  # Export metrics to OTLP (for Prometheus)
+          - name: OTEL_TRACES_EXPORTER
+            value: "otlp"  # Export traces to OTLP (for Jaeger)
+        securityContext:
+          runAsUser: 0  # Root privileges required
+          privileged: true  # Required for ptrace
       initContainers:
       - name: {{ .Values.deployment.initContainer.name }}
         image: {{ .Values.deployment.initContainer.image }}
