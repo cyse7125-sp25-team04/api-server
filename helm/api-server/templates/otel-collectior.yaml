@@ -22,6 +22,7 @@ spec:
           mountPath: /conf
         ports:
         - containerPort: 4318  # OTLP HTTP endpoint
+        - containerPort: 8889
       volumes:
       - name: config
         configMap:
@@ -42,27 +43,36 @@ data:
           http:
             endpoint: "0.0.0.0:4318"
     processors:
-      batch: {}
+      batch:
+        timeout: 100ms  # Send sooner
+        send_batch_size: 10
     exporters:
+      debug:
+        verbosity: detailed
       prometheus:
         endpoint: "0.0.0.0:8889"  # Prometheus scrapes this
       otlp/jaeger:
-        endpoint: "jaeger-collector.webapp.svc.cluster.local:14268"  # Jaeger gRPC endpoint
+        endpoint: "jaeger-collector.webapp.svc.cluster.local:14250" 
         tls:
           insecure: true  # Adjust if TLS is required
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [otlp/jaeger]
+          exporters: [debug,otlp/jaeger]
         metrics:
           receivers: [otlp]
           processors: [batch]
           exporters: [prometheus]
       telemetry:
         logs:
-          level: "info"
+          level: "debug"
 ---
 apiVersion: v1
 kind: Service

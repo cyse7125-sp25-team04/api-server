@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"webapp/services/constants"
 	"webapp/services/user"
-
+	"webapp/services/kafka"
 	"github.com/gorilla/mux"
 )
 
@@ -63,10 +63,24 @@ func UploadTraceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	folderPath := fmt.Sprintf("/%s/%d/%d/%s/", courseIdStr, instructorID, termID, reportType)
-	// 3.forward the request
+	// 4.forward the request
 	if err := addTraceReport(folderPath, file, handler.Filename); err != nil {
 		http.Error(w, "Failed to upload file. Error :"+err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// 5. Send metadata to Kafka
+	metadata := kafka.TraceMetadata{
+		CourseId:     courseId,
+		TermId:       termID,
+		InstructorId: instructorID,
+		ReportType:   reportType,
+		FolderPath:   folderPath,
+		Filename:     handler.Filename,
+	}
+	if err := kafka.SendToKafka(metadata); err != nil {
+		// Log error but don't fail the request, as file is already uploaded
+		fmt.Printf("Failed to send metadata to Kafka: %v\n", err)
 	}
 	if err := addEntrytoDatabase(termID, instructorID, courseId, handler.Filename, folderPath, reportType); err != nil {
 		fmt.Println(err)

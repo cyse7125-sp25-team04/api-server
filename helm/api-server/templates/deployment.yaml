@@ -16,8 +16,9 @@ spec:
         app: {{ .Values.deployment.labels.app }}
     spec:
       shareProcessNamespace: true
+      terminationGracePeriodSeconds: 0
       serviceAccountName: {{ .Values.deployment.serviceAccountName }}
-
+      restartPolicy: Always
       imagePullSecrets:
       {{- range .Values.deployment.imagePullSecrets }}
         - name: {{ .name }}
@@ -58,6 +59,17 @@ spec:
           value: "{{ .Values.deployment.container.env.STORAGE_BUCKET_NAME }}"
         - name: GOOGLE_PROJECT_ID
           value: "{{ .Values.deployment.container.env.GOOGLE_PROJECT_ID }}"
+        - name: KAFKA_TRACE_TOPIC
+          value: "trace_metadata"
+        - name: KAFKA_BROKER
+          value: "kafka.kafka.svc.cluster.local:9092"
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.deployment.container.livelinessProbe.httpGet.port | default 8080 }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 20
         livenessProbe:
           httpGet:
             path: {{ .Values.deployment.container.livelinessProbe.httpGet.path }}
@@ -83,15 +95,23 @@ spec:
           - name: OTEL_GO_AUTO_TARGET_EXE
             value: /go/bin/webapp  # Replace with your Go binary path
           - name: OTEL_EXPORTER_OTLP_ENDPOINT
-            value: "http://otel-collector.webapp.svc.cluster.local:4318"  # Points to collector
+            value: "http://jaeger.webapp.svc.cluster.local:4318"  # Points to collector
           - name: OTEL_SERVICE_NAME
             value: "webapp-service"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: "http/protobuf"  # Use HTTP for OTLP
           - name: OTEL_PROPAGATORS
             value: "tracecontext,baggage"  # Matches service mesh defaults
           - name: OTEL_METRICS_EXPORTER
             value: "otlp"  # Export metrics to OTLP (for Prometheus)
           - name: OTEL_TRACES_EXPORTER
             value: "otlp"  # Export traces to OTLP (for Jaeger)
+          - name: OTEL_LOG_LEVEL
+            value: "debug"  # Set log level to debug for detailed output
+          - name: OTEL_GO_AUTO_INCLUDE_DB_STATEMENT
+            value: "true"  # Include DB statements in traces
+          - name: OTEL_GO_AUTO_PARSE_DB_STATEMENT
+            value: "true"  # Parse DB statements for better trace context
         securityContext:
           runAsUser: 0  # Root privileges required
           privileged: true  # Required for ptrace
