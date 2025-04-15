@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"os"
 	"fmt"
+	"runtime/debug"
 	
 	course "webapp/services/courses"
 	"webapp/services/healthcheck"
 	"webapp/services/instructor"
+	"webapp/services/kafka"
 	trace "webapp/services/trace"
 	user "webapp/services/user"
 
@@ -23,7 +25,9 @@ func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
-	
+	if info, ok := debug.ReadBuildInfo(); ok {
+        fmt.Printf("Build Info: %+v\n", info)
+    }
 	versionFlag := flag.Bool("version", false, "Print version and exit")
     flag.Parse()
     if *versionFlag {
@@ -32,6 +36,12 @@ func main() {
     }
 
 	log.WithField("version", version).Info("Application initialization starting...")
+
+	if err := kafka.InitializeKafkaProducer(); err != nil {
+		log.Fatalf("Failed to initialize Kafka producer: %v", err)
+	}
+	log.Info("Kafka producer initialized successfully")
+	defer kafka.CloseKafkaProducer()
 	startServer()
 }
 

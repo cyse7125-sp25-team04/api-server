@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-trace-ingest
+  namespace: webapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka-trace-ingest
+  template:
+    metadata:
+      labels:
+        app: kafka-trace-ingest
+    spec:
+      imagePullSecrets:
+      {{- range .Values.deployment.imagePullSecrets }}
+        - name: {{ .name }}
+      {{- end }}
+      
+      containers:
+      - name: consumer
+        image: csye712504/kafka-trace-ingest:latest
+        env:
+        - name: BOOTSTRAP_SERVERS
+          value: "kafka.kafka.svc.cluster.local:9092"
+        - name: TOPIC
+          value: "trace_metadata"
+        - name: GROUP_ID
+          value: "pinecone-consumer-group"

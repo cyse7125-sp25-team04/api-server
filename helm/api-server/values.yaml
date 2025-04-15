@@ -31,7 +31,7 @@ deployment:
         path: /healthz
         port: 8080
         initialDelaySeconds: 10
-        periodSeconds: 10
+        periodSeconds: 40
         timeoutSeconds: 3
         failureThreshold: 3
         successThreshold: 1
@@ -40,7 +40,7 @@ deployment:
         path: /healthz
         port: 8080
         initialDelaySeconds: 5
-        periodSeconds: 10
+        periodSeconds: 40
         timeoutSeconds: 3
         failureThreshold: 3
         successThreshold: 1

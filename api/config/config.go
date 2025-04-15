@@ -14,6 +14,8 @@ type Config struct {
 	DB_NAME             string
 	STORAGE_BUCKET_NAME string
 	GOOGLE_PROJECT_ID   string
+	KAFKA_TRACE_TOPIC   string
+	KAFKA_BROKER        string
 }
 
 var envConfig = fetchEnv()
@@ -29,6 +31,8 @@ func fetchEnv() Config {
 		DB_NAME:             GetEnv("DB_NAME"),
 		STORAGE_BUCKET_NAME: GetEnv("STORAGE_BUCKET_NAME"),
 		GOOGLE_PROJECT_ID:   GetEnv("GOOGLE_PROJECT_ID"),
+		KAFKA_TRACE_TOPIC:   GetEnv("KAFKA_TRACE_TOPIC"),
+		KAFKA_BROKER:        GetEnv("KAFKA_BROKER"),
 	}
 }
 
