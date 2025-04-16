@@ -13,6 +13,7 @@ spec:
       labels:
         app: kafka-trace-ingest
     spec:
+      serviceAccountName: {{ .Values.deployment.serviceAccountName }}
       imagePullSecrets:
       {{- range .Values.deployment.imagePullSecrets }}
         - name: {{ .name }}
@@ -28,3 +29,5 @@ spec:
           value: "trace_metadata"
         - name: GROUP_ID
           value: "pinecone-consumer-group"
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "{{ .Values.deployment.container.env.STORAGE_BUCKET_NAME }}" 
