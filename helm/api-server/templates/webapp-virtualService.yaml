@@ -5,13 +5,22 @@ metadata:
   namespace: webapp
 spec:
   hosts:
-  - "*"  # Replace with your domain, or use "*" for all hosts
+  - "*"  # or use dev.gcp.csye7125.xyz
   gateways:
   - webapp-gateway
   http:
   - match:
     - uri:
-        prefix: "/"  # Matches all paths
+        prefix: /dashboard
+    route:
+    - destination:
+        host: streamlit-service.webapp.svc.cluster.local
+        port:
+          number: 80 # 8501
+
+  - match:
+    - uri:
+        prefix: "/"  # Catches everything else
     route:
     - destination:
         host: webapp-service.webapp.svc.cluster.local
